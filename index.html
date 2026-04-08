@@ -1260,6 +1260,21 @@
                     </div>
                     <button class="btn btn-ghost plan-btn">Invest Now</button>
                 </div>
+                <!-- Long-Term -->
+                <div class="plan-card" onclick="openModal('register')">
+                    <div class="plan-icon wealth">💎</div>
+                    <div class="plan-name">Long-Term Plan</div>
+                    <div class="plan-sub"> Wealth Building</div>
+                    <div class="plan-return">400%–1200%</div>
+                    <div class="plan-return-lbl">Annual Return</div>
+                    <div class="plan-details">
+                        <div class="plan-row"><span class="key">Min. Deposit</span><span class="val">$2,280</span></div>
+                        <div class="plan-row"><span class="key">Duration</span><span class="val">6 – 12 months</span>
+                        </div>
+
+                    </div>
+                    <button class="btn btn-ghost plan-btn">Invest Now</button>
+                </div>
                 <!-- Premium -->
                 <div class="plan-card" onclick="openModal('register')">
                     <div class="plan-icon elite">🚀</div>
@@ -1291,21 +1306,7 @@
                     </div>
                     <button class="btn btn-gold plan-btn">Invest Now</button>
                 </div>
-                <!-- Long-Term -->
-                <div class="plan-card" onclick="openModal('register')">
-                    <div class="plan-icon wealth">💎</div>
-                    <div class="plan-name">Long-Term Plan</div>
-                    <div class="plan-sub"> Wealth Building</div>
-                    <div class="plan-return">400%–1200%</div>
-                    <div class="plan-return-lbl">Annual Return</div>
-                    <div class="plan-details">
-                        <div class="plan-row"><span class="key">Min. Deposit</span><span class="val">$2,280</span></div>
-                        <div class="plan-row"><span class="key">Duration</span><span class="val">6 – 12 months</span>
-                        </div>
 
-                    </div>
-                    <button class="btn btn-ghost plan-btn">Invest Now</button>
-                </div>
             </div>
         </div>
 
@@ -1575,10 +1576,12 @@
             <div class="form-group">
                 <label>Investment Plan</label>
                 <select id="dep-plan" onchange="updatePlanInfo()">
-                    <option value="starter">Starter – 3%–5% / 7–14 days / Min $100</option>
-                    <option value="growth" selected="">Growth – 8%–15% / 14–30 days / Min $580</option>
-                    <option value="advanced">Advanced – 20%–40% / 30–60 days / Min $500</option>
-                    <option value="longterm">Long-Term – 60%–120% annually / Min $1,000</option>
+                    <option value="starter">Starter – 3%–5% / 7–14 days / Min $380</option>
+                    <option value="growth" selected="">Growth – 100%–300% / 3–7 days / Min $580</option>
+                    <option value="advanced">Advanced – 200%–400% / 3–10 days / Min $1280</option>
+                    <option value="longterm">Long-Term – 400%–1200% annually / Min $1,000</option>
+                    <option value="VIP">VIP – 800%–1200% annually / Min $5,000</option>
+                    <option value="Premium">Long-Term – 500%–1500% 7-14 days / Min $10,000</option>
                 </select>
             </div>
 
