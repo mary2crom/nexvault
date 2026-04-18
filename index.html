@@ -1820,7 +1820,7 @@
         saveInvestments(session.email, inv);
         renderInvestments(session.email);
         toast('Deposit confirmed! Your plan is now active. ✅', 'success');
-      }, 8000);
+      }, 30 * 60 * 1000);
     }
 
     // ──────────── COPY ADDR ────────────
