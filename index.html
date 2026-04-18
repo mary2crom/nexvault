@@ -1174,7 +1174,7 @@
     </nav>
 
     <!-- ═══════════ LANDING PAGE ═══════════ -->
-    <div id="page-landing" class="page active">
+    <div id="page-landing" class="page">
 
         <!-- HERO -->
         <div class="hero">
@@ -1397,18 +1397,16 @@
     </div>
 
     <!-- ═══════════ DASHBOARD ═══════════ -->
-    <div id="page-dashboard" class="page" style="background:var(--bg)">
+    <div id="page-dashboard" class="page active" style="background:var(--bg)">
         <div class="dash-header" style="position:sticky;top:0;z-index:50">
             <div class="dash-header-inner">
                 <div class="logo" style="font-size:18px">Nex<span style="color:var(--gold)">Vault</span></div>
                 <div class="dash-user">
                     <div style="text-align:right">
-                        <div style="font-size:14px;font-weight:500" id="dash-name">User</div>
-                        <div style="font-size:12px;color:var(--text3)" id="dash-email"><a
-                                href="/cdn-cgi/l/email-protection" class="__cf_email__"
-                                data-cfemail="80f5f3e5f2c0e5f8e1edf0ece5aee3efed">[email&nbsp;protected]</a></div>
+                        <div style="font-size:14px;font-weight:500" id="dash-name">ayt</div>
+                        <div style="font-size:12px;color:var(--text3)" id="dash-email">test@gmail.com</div>
                     </div>
-                    <div class="dash-avatar" id="dash-avatar">U</div>
+                    <div class="dash-avatar" id="dash-avatar">A</div>
                     <button class="btn btn-ghost" style="font-size:13px;padding:7px 16px" onclick="logout()">Log
                         out</button>
                 </div>
@@ -1420,20 +1418,20 @@
             <div class="dash-grid">
                 <div class="dash-card">
                     <div class="dc-label">Portfolio Value</div>
-                    <div class="dc-val" id="dc-total">$0.00</div>
+                    <div class="dc-val" id="dc-total">$334.50</div>
                     <div class="dc-change">↑ Active</div>
                 </div>
                 <div class="dash-card">
                     <div class="dc-label">Total Deposited</div>
-                    <div class="dc-val" id="dc-deposited">$0.00</div>
+                    <div class="dc-val" id="dc-deposited">$300.00</div>
                 </div>
                 <div class="dash-card">
                     <div class="dc-label">Total Earnings</div>
-                    <div class="dc-val" id="dc-earnings" style="color:var(--green)">$0.00</div>
+                    <div class="dc-val" id="dc-earnings" style="color:var(--green)">$34.50</div>
                 </div>
                 <div class="dash-card">
                     <div class="dc-label">Active Plans</div>
-                    <div class="dc-val" id="dc-active">0</div>
+                    <div class="dc-val" id="dc-active">1</div>
                 </div>
             </div>
 
@@ -1447,13 +1445,27 @@
                         Investment</button>
                 </div>
                 <div id="invest-table-wrap">
-                    <div class="empty-state">
-                        <div style="font-size:40px;margin-bottom:8px">📊</div>
-                        <div style="font-weight:600">No investments yet</div>
-                        <p>Make your first deposit and start earning returns.</p>
-                        <button class="btn btn-gold" style="margin-top:16px;padding:10px 24px;font-size:14px"
-                            onclick="openDepositModal()">Start Investing</button>
-                    </div>
+                    <table class="invest-table">
+                        <thead>
+                            <tr>
+                                <th>Plan</th>
+                                <th>Deposited</th>
+                                <th>Earned</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Growth Plan</strong><br><span
+                                        style="font-size:12px;color:var(--text3)">BTC</span></td>
+                                <td>$300.00</td>
+                                <td style="color:var(--green)">+$34.50</td>
+                                <td>14 – 30 days</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1567,7 +1579,7 @@
     </div>
 
     <!-- Deposit / Invest Modal -->
-    <div class="modal-backdrop" id="modal-deposit">
+    <div class="modal-backdrop open" id="modal-deposit" style="display: flex;">
         <div class="modal" style="max-width:500px">
             <button class="modal-close" onclick="closeModal('deposit')">✕</button>
             <h3>New Investment</h3>
@@ -1589,7 +1601,7 @@
                 <label>Deposit Amount (USD equivalent)</label>
                 <input type="number" id="dep-amount" placeholder="Enter amount" min="100">
                 <div class="form-error" id="err-dep-amount">Minimum deposit not met for selected plan</div>
-                <div class="form-hint" id="dep-hint">Min: $580 for Growth Plan</div>
+                <div class="form-hint" id="dep-hint">Min: $380 for Growth Plan</div>
             </div>
 
             <div class="form-group">
@@ -1914,6 +1926,9 @@
                 }
             });
         })();</script>
+
+
+
 
 
 </body>
